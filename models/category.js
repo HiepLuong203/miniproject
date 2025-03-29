@@ -24,6 +24,7 @@ class Category {
     if (isNaN(idNum)) {
       return callback(new Error("Invalid ID"));
     }
+
     db.query(
       "UPDATE categories SET name = ? WHERE id = ?",
       [name, idNum],
@@ -42,13 +43,33 @@ class Category {
     if (isNaN(idNum)) {
       return callback(new Error("Invalid ID"));
     }
-    db.query("DELETE FROM categories WHERE id = ?", [idNum], (err, result) => {
-      if (err) return callback(err);
-      if (result.affectedRows === 0) {
-        return callback(new Error("Category not found"));
+    // Kiểm tra xem có sản phẩm nào liên quan không
+    db.query(
+      "SELECT COUNT(*) as count FROM products WHERE category_name IN (SELECT name FROM categories WHERE id = ?)",
+      [idNum],
+      (err, results) => {
+        if (err) return callback(err);
+        if (results[0].count > 0) {
+          return callback({
+            message: "Cannot delete category",
+            reason: `There are ${results[0].count} products associated with this category`,
+            status: 400,
+          });
+        }
+        // Nếu không có sản phẩm, tiến hành xóa category
+        db.query(
+          "DELETE FROM categories WHERE id = ?",
+          [idNum],
+          (err, result) => {
+            if (err) return callback(err);
+            if (result.affectedRows === 0) {
+              return callback(new Error("Category not found"));
+            }
+            callback(null, result);
+          }
+        );
       }
-      callback(null, result);
-    });
+    );
   }
 
   static findByName(name, callback) {

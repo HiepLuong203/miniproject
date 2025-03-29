@@ -1,4 +1,4 @@
-const roleUser = (...roles) => {
+const roleUser = (roles) => {
   return (req, res, next) => {
     // req.user được gán từ middleware authenticateToken
     if (!req.user) {

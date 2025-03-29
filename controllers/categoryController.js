@@ -56,13 +56,28 @@ const categoryController = {
     }
     Category.delete(id, (err) => {
       if (err) {
-        if (err.message === "Category not found") {
-          return res.status(404).send("Category not found with ID: " + id);
+        // Nếu còn sản phẩm liên quan
+        if (err.message === "Cannot delete category") {
+          return res.status(err.status).json({
+            message: err.message,
+            reason: err.reason,
+          });
         }
-        // console.log("Delete error:", err);
+        // Kiểm tra nếu category không tồn tại
+        if (err.message === "Category not found") {
+          return res
+            .status(404)
+            .json({ message: "Category not found ID" + id });
+        }
+        // Kiểm tra nếu ID không hợp lệ
+        if (err.message === "Invalid ID") {
+          return res.status(400).json({ message: "Invalid ID" });
+        }
+        // Lỗi khác
+        console.log("Delete error:", err);
         return res
           .status(500)
-          .json({ message: "Error deleting Category", error: err.message });
+          .json({ message: "Error deleting category", error: err.message });
       }
       res.status(200).json({ message: "Category deleted", id });
     });

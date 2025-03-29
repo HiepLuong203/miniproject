@@ -12,7 +12,6 @@ const productController = {
   createProduct(req, res) {
     const { name, price, category_name } = req.body;
 
-    // Validation cơ bản
     if (!name || !price || !category_name) {
       return res
         .status(400)
@@ -39,19 +38,12 @@ const productController = {
       // Nếu danh mục tồn tại, tạo sản phẩm
       Product.create(name, price, category_name, (err) => {
         if (err) {
-          // Nếu lỗi do ràng buộc khóa ngoại, trả về thông báo chi tiết
-          if (err.code === "ER_NO_REFERENCED_ROW_2") {
-            return res
-              .status(400)
-              .send("Category does not exist in the database");
-          }
           return res
             .status(500)
             .json({ message: "Error creating product", error: err.message });
         }
         res.status(201).json({
           message: "Product created",
-
           name,
           price,
           category_name,
@@ -64,7 +56,6 @@ const productController = {
     const { id } = req.params;
     const { name, price, category_name } = req.body;
 
-    // Validation cơ bản
     if (!name || !price || !category_name) {
       return res
         .status(400)
@@ -121,7 +112,11 @@ const productController = {
         if (err.message === "Product not found") {
           return res.status(404).send("Product not found");
         }
-        // console.log("Delete error:", err);
+        // Kiểm tra nếu ID không hợp lệ
+        if (err.message === "Invalid ID") {
+          return res.status(400).json({ message: "Invalid ID" });
+        }
+        // Lỗi khác
         return res
           .status(500)
           .json({ message: "Error deleting product", error: err.message });
