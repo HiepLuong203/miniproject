@@ -88,7 +88,7 @@ const productController = {
           ) {
             return res
               .status(400)
-              .send("Product does not exist in the database");
+              .json({ message: "Product does not exist in the database" });
           }
 
           return res
@@ -110,7 +110,7 @@ const productController = {
     Product.delete(id, (err) => {
       if (err) {
         if (err.message === "Product not found") {
-          return res.status(404).send("Product not found");
+          return res.status(404).json({ message: "Product not found" });
         }
         // Kiểm tra nếu ID không hợp lệ
         if (err.message === "Invalid ID") {
