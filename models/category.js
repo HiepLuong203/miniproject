@@ -1,87 +1,68 @@
-const db = require("../config/connectdb");
+const { Sequelize, DataTypes } = require("sequelize");
+const sequelize = require("../config/connectdb");
 
-class Category {
-  static getAll(callback) {
-    db.query("SELECT * FROM categories", (err, results) => {
-      if (err) return callback(err);
-      callback(null, results);
-    });
+const Category = sequelize.define(
+  "Category",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+      validate: {
+        isInt: { msg: "ID must be an integer" },
+      },
+    },
+    name: {
+      type: DataTypes.STRING(200),
+      allowNull: false,
+      unique: true,
+      validate: {
+        notEmpty: { msg: "Category name cannot be empty" },
+        // len: [1, 200],
+      },
+    },
+  },
+  {
+    tableName: "categories",
+    timestamps: false,
   }
+);
 
-  static create(name, callback) {
-    db.query(
-      "INSERT INTO categories (name) VALUES (?)",
-      [name],
-      (err, result) => {
-        if (err) return callback(err);
-        callback(null, result);
-      }
-    );
-  }
+// Phương thức static với validation
+// lấy tất cả dữ liệu
+Category.getAll = async () => {
+  return await Category.findAll();
+};
+// tạo 1 category mới
+Category.createCategory = async (name) => {
+  return await Category.create({ name });
+};
+// cập nhật category theo id
+Category.updateCategory = async (id, name) => {
+  const idNum = parseInt(id, 10);
+  if (isNaN(idNum)) throw new Error("Invalid ID");
 
-  static update(name, id, callback) {
-    const idNum = Number(id);
-    if (isNaN(idNum)) {
-      return callback(new Error("Invalid ID"));
-    }
+  const category = await Category.findByPk(idNum);
+  if (!category) throw new Error("Category not found");
 
-    db.query(
-      "UPDATE categories SET name = ? WHERE id = ?",
-      [name, idNum],
-      (err, result) => {
-        if (err) return callback(err);
-        if (result.affectedRows === 0) {
-          return callback(new Error("Category not found"));
-        }
-        callback(null, result);
-      }
-    );
-  }
+  return await category.update({ name });
+};
+// xóa category theo id
+Category.deleteCategory = async (id) => {
+  const idNum = parseInt(id, 10);
+  if (isNaN(idNum)) throw new Error("Invalid ID");
 
-  static delete(id, callback) {
-    const idNum = Number(id);
-    if (isNaN(idNum)) {
-      return callback(new Error("Invalid ID"));
-    }
-    // Kiểm tra xem có sản phẩm nào liên quan không
-    db.query(
-      "SELECT COUNT(*) as count FROM products WHERE category_name IN (SELECT name FROM categories WHERE id = ?)",
-      [idNum],
-      (err, results) => {
-        if (err) return callback(err);
-        if (results[0].count > 0) {
-          return callback({
-            message: "Cannot delete category",
-            reason: `There are ${results[0].count} products associated with this category`,
-            status: 400,
-          });
-        }
-        // Nếu không có sản phẩm, tiến hành xóa category
-        db.query(
-          "DELETE FROM categories WHERE id = ?",
-          [idNum],
-          (err, result) => {
-            if (err) return callback(err);
-            if (result.affectedRows === 0) {
-              return callback(new Error("Category not found"));
-            }
-            callback(null, result);
-          }
-        );
-      }
-    );
-  }
+  const category = await Category.findByPk(idNum);
+  if (!category) throw new Error("Category not found");
 
-  static findByName(name, callback) {
-    db.query(
-      "SELECT * FROM categories WHERE name = ?",
-      [name],
-      (err, results) => {
-        if (err) return callback(err);
-        callback(null, results[0]); // Trả về danh mục đầu tiên (nếu có)
-      }
-    );
-  }
-}
+  await category.destroy();
+  return { id: idNum };
+};
+// tìm kiếm category theo name
+Category.findByName = async (name) => {
+  if (!name) throw new Error("Category name is required");
+  return await Category.findOne({ where: { name } });
+};
 
 module.exports = Category;

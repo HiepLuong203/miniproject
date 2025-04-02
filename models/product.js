@@ -1,66 +1,87 @@
-const db = require("../config/connectdb");
+const { Sequelize, DataTypes } = require("sequelize");
+const sequelize = require("../config/connectdb");
 
-class Product {
-  static getAll(callback) {
-    db.query("SELECT * FROM products", (err, results) => {
-      if (err) return callback(err);
-      callback(null, results);
-    });
+const Product = sequelize.define(
+  "Product",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+      validate: {
+        isInt: { msg: "ID must be an integer" },
+      },
+    },
+    name: {
+      type: DataTypes.STRING(200),
+      allowNull: false,
+      unique: true,
+      validate: {
+        notEmpty: { msg: "Product name cannot be empty" },
+        // len: [1, 200],
+      },
+    },
+
+    price: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      validate: {
+        isNumeric: { msg: "Price must be a number" },
+        // min: { args: 0, msg: "Price cannot be negative" }, // Kiểm tra số âm
+      },
+    },
+    category_name: {
+      type: DataTypes.STRING(250),
+      allowNull: false,
+      references: {
+        model: "categories",
+        key: "name",
+      },
+      validate: {
+        notEmpty: { msg: "Category_name cannot be empty" },
+        // len: [1, 250],
+      },
+    },
+  },
+  {
+    tableName: "products",
+    timestamps: false,
   }
+);
+// Phương thức static với validation
+// lấy tất cả dữ liệu
+Product.getAll = async () => {
+  return await Product.findAll();
+};
+// tạo 1 category mới
+Product.createProduct = async (name, price, category_name) => {
+  const parsedPrice = parseFloat(price);
+  return await Product.create({ name, parsedPrice, category_name });
+};
+// cập nhật Product theo id
+Product.updateProduct = async (id, name, price, category_name) => {
+  const idNum = parseInt(id, 10);
+  if (isNaN(idNum)) throw new Error("Invalid ID");
+  const product = await Product.findByPk(idNum);
+  if (!product) throw new Error("Product not found");
 
-  static getByCategory(category_name, callback) {
-    db.query(
-      "SELECT p.*, p.category_name AS category_name FROM products p WHERE p.category_name = ?",
-      [category_name],
-      (err, results) => {
-        if (err) return callback(err);
-        callback(null, results);
-      }
-    );
-  }
+  return await product.update({ name, price, category_name });
+};
+// xóa Product theo id
+Product.deleteProduct = async (id) => {
+  const idNum = parseInt(id, 10);
+  if (isNaN(idNum)) throw new Error("Invalid ID");
 
-  static create(name, price, category_name, callback) {
-    db.query(
-      "INSERT INTO products (name, price, category_name) VALUES (?, ?, ?)",
-      [name, price, category_name],
-      (err, result) => {
-        if (err) return callback(err);
-        callback(null, result);
-      }
-    );
-  }
+  const product = await Product.findByPk(idNum);
+  if (!product) throw new Error("Product not found");
 
-  static update(name, price, category_name, id, callback) {
-    const idNum = Number(id);
-    if (isNaN(idNum)) {
-      return callback(new Error("Invalid ID"));
-    }
-    db.query(
-      "UPDATE products SET name = ?, price = ?, category_name = ? WHERE id = ?",
-      [name, price, category_name, idNum],
-      (err, result) => {
-        if (err) return callback(err);
-        if (result.affectedRows === 0) {
-          return callback(new Error("Product not found"));
-        }
-        callback(null, result);
-      }
-    );
-  }
-
-  static delete(id, callback) {
-    const idNum = Number(id);
-    if (isNaN(idNum)) {
-      return callback(new Error("Invalid ID"));
-    }
-    db.query("DELETE FROM products WHERE id = ?", [idNum], (err, result) => {
-      if (err) return callback(err);
-      if (result.affectedRows === 0) {
-        return callback(new Error("Product not found"));
-      }
-      callback(null, result);
-    });
-  }
-}
-
+  await product.destroy();
+  return { id: idNum };
+};
+//lấy tất cả product theo name_category
+Product.getByCategory = async (category_name) => {
+  if (!category_name) throw new Error("Category name is required");
+  return await Product.findAll({ where: { category_name } });
+};
 module.exports = Product;

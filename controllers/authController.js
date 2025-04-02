@@ -2,48 +2,61 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 
 const authController = {
-  register(req, res) {
+  register: async (req, res) => {
     const { username, password, role } = req.body;
 
-    // Validation cơ bản
-    if (!username || !password) {
-      return res.status(400).send("Username and password are required");
-    }
-
-    // Nếu không có role, mặc định là user
-    const userRole = role && ["admin", "user"].includes(role) ? role : "user";
-
-    User.create(username, password, userRole, (err, result) => {
-      if (err) return res.status(500).send("Error registering user");
+    try {
+      const userRole = role && ["admin", "user"].includes(role) ? role : "user";
+      const result = await User.createUser(username, password, userRole);
+      res.status(201).json({
+        message: "User registered",
+        username: result.username,
+        role: result.role,
+      });
+    } catch (err) {
+      if (err.name === "SequelizeValidationError") {
+        return res.status(400).json({ message: err.errors[0].message }); // Trả về msg từ validation
+      }
       res
-        .status(201)
-        .json({ message: "User registered", username, password, userRole });
-    });
+        .status(500)
+        .json({ message: "Error registering user: " + err.message });
+    }
   },
 
-  login(req, res) {
+  login: async (req, res) => {
     const { username, password } = req.body;
 
-    User.findByUsername(username, (err, user) => {
-      if (err || !user) return res.status(404).send("User not found");
+    try {
+      const user = await User.findByUsername(username);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
-      if (password !== user.password)
-        return res.status(401).send("Invalid password");
+      if (password !== user.password) {
+        return res.status(401).json({ message: "Invalid password" });
+      }
 
-      // Thêm role vào payload của token
       const token = jwt.sign(
         { id: user.id, role: user.role },
         process.env.JWT_SECRET,
-        { expiresIn: "1h" }
+        { expiresIn: "2h" }
       );
-      res.status(200).send({ auth: true, token, role: user.role });
-    });
+      res.status(200).json({ auth: true, token, role: user.role });
+    } catch (err) {
+      if (err.message === "Username is required") {
+        return res.status(400).json({ message: "Username is required" });
+      }
+      res.status(500).json({ message: "Error logging in: " + err.message });
+    }
   },
-  getAlluser(req, res) {
-    User.getAll((err, results) => {
-      if (err) return res.status(500).send("Error fetching users");
+
+  getAlluser: async (req, res) => {
+    try {
+      const results = await User.getAll();
       res.status(200).json(results);
-    });
+    } catch (err) {
+      res.status(500).json({ message: "Error fetching users: " + err.message });
+    }
   },
 };
 

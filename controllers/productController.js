@@ -2,127 +2,93 @@ const Product = require("../models/product");
 const Category = require("../models/category");
 
 const productController = {
-  getAllProducts(req, res) {
-    Product.getAll((err, results) => {
-      if (err) return res.status(500).send("Error fetching products");
+  getAllProducts: async (req, res) => {
+    try {
+      const results = await Product.getAll();
       res.status(200).json(results);
-    });
+    } catch (err) {
+      res
+        .status(500)
+        .json({ message: "Error fetching products: " + err.message });
+    }
   },
 
-  createProduct(req, res) {
+  createProduct: async (req, res) => {
     const { name, price, category_name } = req.body;
 
-    if (!name || !price || !category_name) {
-      return res
-        .status(400)
-        .send("Name, price, and category_name are required");
-    }
-
-    // Kiểm tra category_name có tồn tại không
-    Category.findByName(category_name, (err, category) => {
-      if (err) return res.status(500).send("Error checking category");
-
+    try {
+      const category = await Category.findByName(category_name);
       if (!category) {
-        // Lấy danh sách tất cả category_name để gợi ý
-        Category.getAll((err, categories) => {
-          if (err) return res.status(500).send("Error fetching categories");
-          const availableCategories = categories.map((cat) => cat.name);
-          return res.status(400).json({
-            message: "Category does not exist",
-            availableCategories: availableCategories,
-          });
+        const categories = await Category.getAll();
+        const availableCategories = categories.map((cat) => cat.name);
+        return res.status(400).json({
+          message: "Category does not exist",
+          availableCategories,
         });
-        return;
       }
 
-      // Nếu danh mục tồn tại, tạo sản phẩm
-      Product.create(name, price, category_name, (err) => {
-        if (err) {
-          return res
-            .status(500)
-            .json({ message: "Error creating product", error: err.message });
-        }
-        res.status(201).json({
-          message: "Product created",
-          name,
-          price,
-          category_name,
-        });
+      const result = await Product.createProduct(name, price, category_name);
+      res.status(201).json({
+        message: "Product created",
+        id: result.id,
+        name: result.name,
+        price: result.price,
+        category_name: result.category_name,
       });
-    });
+    } catch (err) {
+      res
+        .status(500)
+        .json({ message: "Error creating product: " + err.message });
+    }
   },
 
-  updateProduct(req, res) {
+  updateProduct: async (req, res) => {
     const { id } = req.params;
     const { name, price, category_name } = req.body;
 
-    if (!name || !price || !category_name) {
-      return res
-        .status(400)
-        .send("Name, price, and category_name are required");
-    }
-
-    // Kiểm tra category_name có tồn tại không
-    Category.findByName(category_name, (err, category) => {
-      if (err) return res.status(500).send("Error checking category");
-
+    try {
+      const category = await Category.findByName(category_name);
       if (!category) {
-        // Lấy danh sách tất cả category_name để gợi ý
-        Category.getAll((err, categories) => {
-          if (err) return res.status(500).send("Error fetching categories");
-          const availableCategories = categories.map((cat) => cat.name);
-          return res.status(400).json({
-            message: "Category does not exist",
-            availableCategories: availableCategories,
-          });
+        const categories = await Category.getAll();
+        const availableCategories = categories.map((cat) => cat.name);
+        return res.status(400).json({
+          message: "Category does not exist",
+          availableCategories,
         });
-        return;
       }
 
-      // Nếu danh mục tồn tại, cập nhật sản phẩm
-      Product.update(name, price, category_name, id, (err) => {
-        if (err) {
-          if (
-            err.code === "ER_NO_REFERENCED_ROW_2" ||
-            err.message === "Product not found"
-          ) {
-            return res
-              .status(400)
-              .json({ message: "Product does not exist in the database" });
-          }
-
-          return res
-            .status(500)
-            .json({ message: "Error updating product", error: err.message });
-        }
-        res
-          .status(200)
-          .json({ message: "Product updated", id, name, price, category_name });
+      const result = await Product.updateProduct(
+        id,
+        name,
+        price,
+        category_name
+      );
+      res.status(200).json({
+        message: "Product updated",
+        id: result.id,
+        name: result.name,
+        price: result.price,
+        category_name: result.category_name,
       });
-    });
+    } catch (err) {
+      res
+        .status(500)
+        .json({ message: "Error updating product: " + err.message });
+    }
   },
 
-  deleteProduct(req, res) {
+  deleteProduct: async (req, res) => {
     const { id } = req.params;
-    if (!id) {
-      return res.status(400).send("ID is required");
+
+    try {
+      const result = await Product.deleteProduct(id);
+      res.status(200).json({ message: "Product deleted", id: result.id });
+    } catch (err) {
+      res
+        .status(500)
+        .json({ message: "Error deleting product: " + err.message });
     }
-    Product.delete(id, (err) => {
-      if (err) {
-        if (err.message === "Product not found") {
-          return res.status(404).json({ message: "Product not found" });
-        }
-        // Kiểm tra nếu ID không hợp lệ
-        if (err.message === "Invalid ID") {
-          return res.status(400).json({ message: "Invalid ID" });
-        }
-        // Lỗi khác
-        return res
-          .status(500)
-          .json({ message: "Error deleting product", error: err.message });
-      }
-      res.status(200).json({ message: "Product deleted", id });
-    });
   },
 };
+
 module.exports = productController;

@@ -6,6 +6,7 @@ const roleUser = require("../middleware/role");
 
 router.post("/register", authController.register);
 router.post("/login", authController.login);
+
 router.get(
   "/userslist",
   authenticateToken,
