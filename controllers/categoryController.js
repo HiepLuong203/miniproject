@@ -35,7 +35,7 @@ const categoryController = {
     try {
       const result = await Category.updateCategory(id, name);
       res.status(200).json({
-        message: "Category updated",
+        message: "Category updated and related products updated",
         id: result.id,
         name: result.name,
       });
@@ -53,7 +53,7 @@ const categoryController = {
       res.status(200).json({ message: "Category deleted", id: result.id });
     } catch (err) {
       res
-        .status(500)
+        .status(400)
         .json({ message: "Error deleting category: " + err.message });
     }
   },

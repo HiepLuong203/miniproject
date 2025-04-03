@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require("sequelize");
 const sequelize = require("../config/connectdb");
+const Product = require("./product");
 
 const Category = sequelize.define(
   "Category",
@@ -46,7 +47,16 @@ Category.updateCategory = async (id, name) => {
   const category = await Category.findByPk(idNum);
   if (!category) throw new Error("Category not found");
 
-  return await category.update({ name });
+  const oldName = category.name;
+  await category.update({ name });
+
+  // Cập nhật tất cả sản phẩm có category_name cũ sang tên mới
+  await Product.update(
+    { category_name: name },
+    { where: { category_name: oldName } }
+  );
+
+  return category;
 };
 // xóa category theo id
 Category.deleteCategory = async (id) => {
@@ -55,7 +65,15 @@ Category.deleteCategory = async (id) => {
 
   const category = await Category.findByPk(idNum);
   if (!category) throw new Error("Category not found");
-
+  // Check product nào có category_name cùng không
+  const products = await Product.findAll({
+    where: { category_name: category.name },
+  });
+  if (products.length > 0) {
+    throw new Error(
+      `Cannot delete category '${category.name}' because it is still associated with ${products.length} product(s)`
+    );
+  }
   await category.destroy();
   return { id: idNum };
 };
