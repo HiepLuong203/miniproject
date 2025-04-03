@@ -1,6 +1,6 @@
-const { Sequelize, DataTypes } = require("sequelize");
-const sequelize = require("../config/connectdb");
+const { Sequelize, DataTypes, FLOAT, INTEGER } = require("sequelize");
 
+const sequelize = require("../config/connectdb");
 const Product = sequelize.define(
   "Product",
   {
@@ -10,32 +10,38 @@ const Product = sequelize.define(
       autoIncrement: true,
       allowNull: false,
       validate: {
-        isInt: { msg: "ID must be an integer" },
+        isInt: { msg: "ID must be an interger" },
       },
     },
     name: {
-      type: DataTypes.STRING(200),
+      type: DataTypes.STRING(250),
       allowNull: false,
-      unique: true,
       validate: {
-        notEmpty: { msg: "Product name cannot be empty" },
-        // len: [1, 200],
+        notEmpty: { msg: "Product name cannot empty" },
       },
     },
-
     price: {
-      type: DataTypes.DECIMAL(10, 2),
+      type: DataTypes.FLOAT,
       allowNull: false,
       validate: {
-        isNumeric: { msg: "Price must be a number" },
-        // min: { args: 0, msg: "Price cannot be negative" }, // Kiểm tra số âm
+        isNumeric: { msg: "Price must is number" },
+        check(value) {
+          if (value < 0) {
+            throw new Error("Price cannot be negative");
+          }
+        },
       },
     },
-    category_name: {
+    description: {
+      type: DataTypes.TEXT,
+      notEmpty: true,
+      allowNull: true,
+    },
+    name_category: {
       type: DataTypes.STRING(250),
       allowNull: false,
       references: {
-        model: "categories",
+        model: "category",
         key: "name",
       },
       validate: {
@@ -43,45 +49,70 @@ const Product = sequelize.define(
         // len: [1, 250],
       },
     },
+    image: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      notEmpty: true,
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      field: "created_at",
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      field: "updated_at",
+    },
   },
-  {
-    tableName: "products",
-    timestamps: false,
-  }
+  { tableName: "product", timestamps: true }
 );
-// Phương thức static với validation
-// lấy tất cả dữ liệu
-Product.getAll = async () => {
+//hien thi du lieu
+Product.getAllProducts = async () => {
   return await Product.findAll();
 };
-// tạo 1 category mới
-Product.createProduct = async (name, price, category_name) => {
-  const parsedPrice = parseFloat(price);
-  return await Product.create({ name, parsedPrice, category_name });
+//them moi 1 product
+Product.addProduct = async ({
+  name,
+  price,
+  description,
+  name_category,
+  image,
+}) => {
+  return await Product.create({
+    name,
+    price,
+    description,
+    name_category,
+    image,
+  });
 };
-// cập nhật Product theo id
-Product.updateProduct = async (id, name, price, category_name) => {
-  const idNum = parseInt(id, 10);
+//cap nhat 1 product
+Product.updateProduct = async (
+  id,
+  name,
+  price,
+  description,
+  name_category,
+  image
+) => {
+  const idNum = Number(id);
   if (isNaN(idNum)) throw new Error("Invalid ID");
-  const product = await Product.findByPk(idNum);
-  if (!product) throw new Error("Product not found");
-
-  return await product.update({ name, price, category_name });
+  const pUpdate = await Product.findByPk(idNum);
+  if (!pUpdate) throw new Error("Product not found");
+  return await pUpdate.update({
+    name,
+    price,
+    description,
+    name_category,
+    image,
+  });
 };
-// xóa Product theo id
 Product.deleteProduct = async (id) => {
-  const idNum = parseInt(id, 10);
+  const idNum = Number(id);
   if (isNaN(idNum)) throw new Error("Invalid ID");
-
-  const product = await Product.findByPk(idNum);
-  if (!product) throw new Error("Product not found");
-
-  await product.destroy();
-  return { id: idNum };
+  const pDelete = await Product.findByPk(idNum);
+  if (!pDelete) throw new Error("Product not found");
+  await pDelete.destroy();
+  return pDelete;
 };
-//lấy tất cả product theo name_category
-Product.getByCategory = async (category_name) => {
-  if (!category_name) throw new Error("Category name is required");
-  return await Product.findAll({ where: { category_name } });
-};
+
 module.exports = Product;

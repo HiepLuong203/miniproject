@@ -16,7 +16,6 @@ const User = sequelize.define(
       unique: true,
       validate: {
         notEmpty: { msg: "Username cannot be empty" },
-        // len: [1, 255],
       },
     },
     password: {
@@ -24,7 +23,6 @@ const User = sequelize.define(
       allowNull: false,
       validate: {
         notEmpty: { msg: "Password cannot be empty" },
-        // len: [1, 255],
       },
     },
     role: {
@@ -38,26 +36,39 @@ const User = sequelize.define(
         },
       },
     },
+    createdAt: {
+      type: DataTypes.DATE,
+      field: "created_at",
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      field: "updated_at",
+    },
   },
   {
     tableName: "users",
-    timestamps: false,
+    timestamps: true,
   }
 );
 
-// Phương thức static với validation
-// tạo tạo khoản
-User.createUser = async (username, password, role) => {
-  return await User.create({ username, password, role });
+//tao tai khoan
+User.createUser = async (username, password, role = "user") => {
+  try {
+    const user = await User.create({ username, password, role });
+    return user;
+  } catch (error) {
+    throw new Error(`Error creating user: ${error.message}`);
+  }
 };
-// tìm kiếm theo username
+
+//check username
 User.findByUsername = async (username) => {
-  // if (!username) throw new Error("Username is required");
-  return await User.findOne({ where: { username } });
-};
-// hiển thị thông tin users
-User.getAll = async () => {
-  return await User.findAll();
+  try {
+    const user = await User.findOne({ where: { username } });
+    return user;
+  } catch (error) {
+    throw new Error(`Username not exist: ${error.message}`);
+  }
 };
 
 module.exports = User;

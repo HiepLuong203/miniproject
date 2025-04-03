@@ -11,37 +11,50 @@ const Category = sequelize.define(
       autoIncrement: true,
       allowNull: false,
       validate: {
-        isInt: { msg: "ID must be an integer" },
+        isInt: { msg: "ID must be an interger" },
       },
     },
     name: {
-      type: DataTypes.STRING(200),
+      type: DataTypes.STRING(250),
       allowNull: false,
       unique: true,
       validate: {
-        notEmpty: { msg: "Category name cannot be empty" },
-        // len: [1, 200],
+        notEmpty: { msg: "Category name cannot empty" },
       },
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      field: "created_at",
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      field: "updated_at",
     },
   },
   {
-    tableName: "categories",
-    timestamps: false,
+    tableName: "category",
+    timestamps: true,
   }
 );
-
-// Phương thức static với validation
-// lấy tất cả dữ liệu
-Category.getAll = async () => {
+//Lấy tất cả dữ liệu
+Category.getAllCategory = async () => {
   return await Category.findAll();
 };
-// tạo 1 category mới
-Category.createCategory = async (name) => {
+//Lất data theo id category
+Category.getCategoryById = async (id) => {
+  const idNum = Number(id);
+  if (isNaN(idNum)) {
+    throw new Error("Invalid ID");
+  }
+  return await Category.findOne({ where: { id: idNum } });
+};
+//Thêm 1 category
+Category.addCategory = async (name) => {
   return await Category.create({ name });
 };
-// cập nhật category theo id
+//Sửa 1 category theo id
 Category.updateCategory = async (id, name) => {
-  const idNum = parseInt(id, 10);
+  const idNum = Number(id);
   if (isNaN(idNum)) throw new Error("Invalid ID");
 
   const category = await Category.findByPk(idNum);
@@ -50,24 +63,23 @@ Category.updateCategory = async (id, name) => {
   const oldName = category.name;
   await category.update({ name });
 
-  // Cập nhật tất cả sản phẩm có category_name cũ sang tên mới
+  // Cập nhật tất cả sản phẩm có name_category cũ sang tên mới
   await Product.update(
-    { category_name: name },
-    { where: { category_name: oldName } }
+    { name_category: name },
+    { where: { name_category: oldName } }
   );
 
   return category;
 };
-// xóa category theo id
-Category.deleteCategory = async (id) => {
-  const idNum = parseInt(id, 10);
-  if (isNaN(idNum)) throw new Error("Invalid ID");
 
+Category.deleteCategory = async (id) => {
+  const idNum = Number(id);
+  if (isNaN(idNum)) throw new Error("Invalid ID");
   const category = await Category.findByPk(idNum);
   if (!category) throw new Error("Category not found");
-  // Check product nào có category_name cùng không
+  // Check product nào có name_category cùng không
   const products = await Product.findAll({
-    where: { category_name: category.name },
+    where: { name_category: category.name },
   });
   if (products.length > 0) {
     throw new Error(
@@ -75,12 +87,10 @@ Category.deleteCategory = async (id) => {
     );
   }
   await category.destroy();
-  return { id: idNum };
+  return category;
 };
-// tìm kiếm category theo name
 Category.findByName = async (name) => {
   if (!name) throw new Error("Category name is required");
   return await Category.findOne({ where: { name } });
 };
-
 module.exports = Category;

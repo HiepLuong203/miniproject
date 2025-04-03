@@ -14,9 +14,6 @@ const authController = {
         role: result.role,
       });
     } catch (err) {
-      if (err.name === "SequelizeValidationError") {
-        return res.status(400).json({ message: err.errors[0].message }); // Trả về msg từ validation
-      }
       res
         .status(500)
         .json({ message: "Error registering user: " + err.message });
@@ -47,15 +44,6 @@ const authController = {
         return res.status(400).json({ message: "Username is required" });
       }
       res.status(500).json({ message: "Error logging in: " + err.message });
-    }
-  },
-
-  getAlluser: async (req, res) => {
-    try {
-      const results = await User.getAll();
-      res.status(200).json(results);
-    } catch (err) {
-      res.status(500).json({ message: "Error fetching users: " + err.message });
     }
   },
 };

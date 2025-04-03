@@ -1,5 +1,5 @@
 const { Sequelize } = require("sequelize");
-require("dotenv").config();
+
 const sequelize = new Sequelize({
   dialect: "mysql",
   host: process.env.DB_HOST,
@@ -11,10 +11,10 @@ const sequelize = new Sequelize({
 sequelize
   .authenticate()
   .then(() => {
-    console.log("Conntected MySQL with Sequelize");
+    console.log("Connected MySQL");
   })
   .catch((err) => {
-    console.log("Error connect database", err);
+    console.log("Error connect MySQL", err);
     throw err;
   });
 module.exports = sequelize;
