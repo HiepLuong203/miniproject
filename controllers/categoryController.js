@@ -1,5 +1,5 @@
 const Category = require("../models/category");
-
+const Product = require("../models/product");
 const categoryController = {
   getAllCategories: async (req, res) => {
     try {
@@ -73,6 +73,38 @@ const categoryController = {
       res
         .status(500)
         .json({ message: "Error delete category: " + error.message });
+    }
+  },
+  //Lấy Products theo name_category
+  getProductsByCategory: async (req, res) => {
+    try {
+      const { name } = req.params;
+
+      // Tìm category theo tên
+      const category = await Category.findOne({ where: { name } });
+
+      if (!category) {
+        return res
+          .status(404)
+          .json({ message: `Category '${name}' not found` });
+      }
+
+      // Lấy Product thuộc category đó
+      const products = await Product.findAll({
+        where: { name_category: category.name },
+      });
+
+      if (products.length === 0) {
+        return res.status(200).json({
+          message: "No products found for this category",
+          products: [],
+        });
+      }
+
+      res.status(200).json(products);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.status(500).json({ message: "Error fetching products" });
     }
   },
 };

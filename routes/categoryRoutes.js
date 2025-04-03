@@ -6,6 +6,8 @@ const roleUser = require("../middlewares/role");
 
 router.get("/", categoryController.getAllCategories);
 router.get("/:id", categoryController.getCategoryById);
+router.get("/products/:name", categoryController.getProductsByCategory);
+
 router.post(
   "/",
   authenticateToken,
