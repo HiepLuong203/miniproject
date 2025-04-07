@@ -1,8 +1,15 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 
-const authController = {
-  register: async (req, res) => {
+class authController {
+  // static #instance = null;
+  // static getInstance() {
+  //   if (!authController.#instance) {
+  //     authController.#instance = new authController();
+  //   }
+  //   return authController.#instance;
+  // }
+  async register(req, res) {
     const { username, password, role } = req.body;
 
     try {
@@ -18,9 +25,9 @@ const authController = {
         .status(500)
         .json({ message: "Error registering user: " + err.message });
     }
-  },
+  }
 
-  login: async (req, res) => {
+  async login(req, res) {
     const { username, password } = req.body;
 
     try {
@@ -45,7 +52,7 @@ const authController = {
       }
       res.status(500).json({ message: "Error logging in: " + err.message });
     }
-  },
-};
+  }
+}
 
-module.exports = authController;
+module.exports = new authController();

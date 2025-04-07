@@ -1,7 +1,15 @@
 const Product = require("../models/product");
 const Category = require("../models/category");
-const productController = {
-  getAllProducts: async (req, res) => {
+class productController {
+  // static #instance = null;
+  // static getInstance() {
+  //   if (!productController.#instance) {
+  //     productController.#instance = new productController();
+  //   }
+  //   return productController.#instance;
+  // }
+  // Lấy tất cả product
+  async getAllProducts(req, res) {
     try {
       const result = await Product.getAllProducts();
       res.status(200).json({ message: "Data Product:", result });
@@ -10,16 +18,15 @@ const productController = {
         .status(500)
         .json({ messsage: "Error fetching product" + error.messsage });
     }
-  },
-  // Thêm sản phẩm mới
-  addProduct: async (req, res) => {
+  }
+  async addProduct(req, res) {
     try {
       const { name, price, description, name_category } = req.body;
       const imagePath = req.file ? "/uploads/" + req.file.filename : null; // Lưu đường dẫn ảnh
       // Kiểm tra nếu danh mục tồn tại
       const category = await Category.findByName(name_category);
       if (!category) {
-        const categories = await Category.getAllCategory();
+        const categories = await Category.getAllCategories();
         const availableCategories = categories.map((cat) => cat.name);
         return res.status(400).json({
           message: "Category does not exist",
@@ -41,8 +48,8 @@ const productController = {
         .status(500)
         .json({ message: "Error creating product: " + error.message });
     }
-  },
-  updateProduct: async (req, res) => {
+  }
+  async updateProduct(req, res) {
     const { id } = req.params;
     const { name, price, description, name_category } = req.body;
     const priceF = parseFloat(price);
@@ -50,7 +57,7 @@ const productController = {
     try {
       const category = await Category.findByName(name_category);
       if (!category) {
-        const categories = await Category.getAllCategory();
+        const categories = await Category.getAllCategories();
         const availableCategories = categories.map((cate) => {
           return cate.name;
         });
@@ -82,8 +89,8 @@ const productController = {
         .status(400)
         .json({ message: "Error update product: " + error.message });
     }
-  },
-  deleteProduct: async (req, res) => {
+  }
+  async deleteProduct(req, res) {
     const { id } = req.params;
     try {
       const result = await Product.deleteProduct(id);
@@ -102,6 +109,6 @@ const productController = {
         .status(400)
         .json({ message: "Error delete product: " + error.message });
     }
-  },
-};
-module.exports = productController;
+  }
+}
+module.exports = new productController();
